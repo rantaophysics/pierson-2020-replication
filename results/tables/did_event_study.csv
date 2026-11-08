@@ -1,0 +1,21 @@
+term,estimate,se,rel_q
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")-7",-0.0017085252440449733,0.0010963798324982817,-7
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")-6",-0.001562085722498221,0.0010305455276772729,-6
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")-5",-7.055689589764684e-4,3.37470391347441e-4,-5
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")-4",-4.6773092516992534e-4,5.155853651562678e-4,-4
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")-3",-7.794754800516936e-4,7.321274919529356e-4,-3
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")-2",-2.3669645821512402e-4,4.109360025437212e-4,-2
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")0",-0.001269163489805059,5.008204486610395e-4,0
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")1",-0.0026905540936684636,8.353499896147929e-4,1
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")2",-0.002234319001770352,4.0497870480293705e-4,2
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")3",-0.0016704237143096593,5.91806794951532e-4,3
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")4",-0.0026332755770590915,0.0011327643782658024,4
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")5",-0.003534862087839781,0.0013481959242424505,5
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")6",-0.0027554771805558646,8.81800559343551e-4,6
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")7",-0.0022371062707896537,6.92121659523871e-4,7
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")8",-0.002586917604881749,0.0012344408656286253,8
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")9",-0.003283045885172423,0.0017136356730221214,9
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")10",-0.002540414108117616,9.360922266465129e-4,10
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")11",-0.0016434552313078293,7.627689958856292e-4,11
+"relevel(factor(ifelse(treat_state, rel_q, -1)), ref = ""-1"")12",-0.0033348799487826694,0.0015421110032614767,12
+NA,0,0,-1

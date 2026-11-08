@@ -1,0 +1,20 @@
+# Raw stop data: 2.2 GB, too large for GitHub. Get it with data/download_data.sh
+data/raw/*.rds
+data/raw/*.part
+
+# LaTeX build files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# OS and editor files
+.DS_Store
+.Rhistory
+.RData
+.Rproj.user/
+__pycache__/
+~$*.pptx

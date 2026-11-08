@@ -1,0 +1,220 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,enumitem,hyperref,xcolor}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black}
+\setlist{itemsep=2pt,topsep=4pt}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\logit}{\operatorname{logit}}
+\newcommand{\1}{\mathbf{1}}
+\newcommand{\keybox}[1]{\par\smallskip\noindent\fcolorbox{gray!60}{gray!8}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{#1}}\par\smallskip}
+
+\title{Technical Notes for the Replication of\\ Pierson et al.\ (2020), ``A large-scale analysis of racial disparities in police stops across the United States''}
+\author{STAT 5200 Replication Group}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\noindent These notes explain the methods in the paper well enough to present them and to answer questions. Each section states the idea, the estimating equation, the identifying assumption, how to read the coefficient, and the main threats. Section~\ref{sec:code} records how the authors actually implemented each method in their public code (\texttt{code/original/opp-master/lib}), which is what our replication follows.
+
+\tableofcontents
+
+\section{The core problem: what is the benchmark?}
+
+The paper asks whether police treat drivers differently because of race. The naive comparison is stop rates per capita: Black drivers are stopped at 0.10 per person per year by state patrols, white drivers at 0.07. This does not identify discrimination, because we do not observe who is \emph{at risk} of being stopped: how much each group drives, where, and how often they commit violations. The population is the wrong denominator. This is the \textbf{benchmark problem}.
+
+In potential-outcomes language, let $Y_i(r)$ be whether driver $i$ would be stopped if perceived as race $r$, holding driving behaviour fixed. Discrimination means $Y_i(\text{Black}) \neq Y_i(\text{white})$ for the same behaviour. We never observe both, and stopped drivers are a selected sample: we only see people after the officer acted. Each of the three methods in the paper gets around this in a different way:
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Decision & Method & How it avoids the benchmark problem \\
+\midrule
+Whom to stop & Veil of darkness & Compares stops at the same clock time, light vs.\ dark \\
+Whom to search & Outcome and threshold tests & Uses how often searches find contraband \\
+Policy effect & Difference-in-differences & Compares legalizing states with others over time \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Veil of darkness (stop decisions)}
+
+\subsection{Idea}
+If officers use race when deciding whom to stop, they can do so more easily in daylight than in the dark, when race is harder to see (Grogger and Ridgeway, 2006). So if Black drivers make up a \emph{smaller} share of stopped drivers after dark than in daylight, that suggests race played a role in daytime stops.
+
+The difficulty is that darkness is tied to time of day, and who is on the road at 2pm differs from who is on the road at 9pm. The fix: compare stops \textbf{at the same clock time} on days when that time is light versus dark. Sunset moves through the year, so 7pm is light in summer and dark in winter.
+
+\subsection{Why the daylight saving time windows}
+Comparing July to January at 7pm still mixes in seasonal differences (school, holidays, tourism). The paper therefore keeps only stops within 30 days of the start or end of daylight saving time (DST). The DST switch moves sunset by an hour overnight while driving patterns barely change. On the Saturday before DST starts, 7pm may be dark; a week later the same 7pm is light. This is the same design idea as Smith (2016) on DST and crashes: a sharp, policy-driven shift in light that is unrelated to driver behaviour.
+
+Two further restrictions sharpen the comparison:
+\begin{itemize}
+  \item \textbf{Inter-twilight window}: only clock times that are light on some days and dark on others (roughly 5pm to 10pm). Times that are always light or always dark carry no information about the effect of darkness.
+  \item \textbf{Drop sunset to dusk}: the roughly 30 minutes between sunset and the end of civil twilight are neither clearly light nor dark, so those stops are removed.
+\end{itemize}
+
+\subsection{Estimating equation}
+For stop $i$ at clock time $t_i$, location $g_i$ (county or city) and DST period $p_i$ (spring or fall of each year), with $d_i = \1\{\text{stop occurred after dusk}\}$:
+\begin{equation}
+\Pr(\text{Black}_i = 1) = \logit^{-1}\Big(\alpha\, d_i + \text{ns}_6(t_i) + \gamma_{g_i} + \delta_{p_i}\Big)
+\label{eq:vod}
+\end{equation}
+\begin{itemize}
+  \item $\text{ns}_6(t)$ is a \textbf{natural cubic spline} in clock time with 6 degrees of freedom: a flexible, smooth curve that absorbs how the racial mix of drivers changes over the evening. Fixing $t$ is what makes the comparison ``same clock time.''
+  \item $\gamma_g$ are location fixed effects: the comparison is within county or city.
+  \item $\delta_p$ are period fixed effects (season $\times$ year in the code).
+  \item The paper fits separate $\alpha$'s for state patrols ($\alpha_s$) and city police ($\alpha_c$).
+\end{itemize}
+The sample is restricted to Black and white drivers, because Hispanic ethnicity is often not visible even in daylight.
+
+\subsection{Reading the coefficient}
+$\alpha$ is a \textbf{log odds ratio}. The paper reports $\alpha_s = -0.033$ and $\alpha_c = -0.039$. Exponentiating, $e^{-0.033} \approx 0.968$: after dark, the odds that a stopped driver is Black are about 3\% lower than in daylight at the same clock time and place. A negative $\alpha$ is evidence of discrimination against Black drivers in stop decisions. The effect is small in magnitude but very precisely estimated because the sample has millions of stops.
+
+\subsection{Identifying assumption}
+\keybox{Conditional on clock time, location and period, the racial composition of drivers \emph{at risk of being stopped} does not change with darkness. Equivalently, darkness affects the share of Black drivers stopped only through officers' ability to see race.}
+
+\subsection{Threats and questions to expect}
+\begin{itemize}
+  \item \textbf{Behaviour changes with light by race.} If Black drivers drive less after dark for reasons unrelated to policing (shift work, safety concerns), the test would show a spurious negative $\alpha$. The DST windows limit this, because behaviour should not change much within a few weeks.
+  \item \textbf{Artificial light.} Streetlights let officers see race at night, which weakens the contrast and \emph{understates} discrimination. So the estimate is plausibly a lower bound.
+  \item \textbf{Violation type depends on light.} Broken tail lights are visible only at night. If such equipment violations are more common among Black drivers, night stops would include more Black drivers for a non-discriminatory reason, which can mask discrimination.
+  \item \textbf{Inference.} The model treats stops as independent. Stops in the same county and week share shocks (enforcement campaigns, weather), so true standard errors are larger. Clustering by location is a natural robustness check.
+\end{itemize}
+
+\subsection{Connection to regression discontinuity}
+The design borrows the RD intuition: an abrupt change (DST) shifts the ``treatment'' (darkness at a given clock time) while everything else changes smoothly. It is not a textbook RD, because the comparison is light vs.\ dark at fixed clock times across days in a window, rather than a jump in a running variable at a cutoff. The 30-day window plays the role of the RD bandwidth: narrower windows give cleaner comparisons but fewer observations.
+
+\section{Outcome test and threshold test (search decisions)}
+
+\subsection{Search rates}
+Among stopped drivers, Black and Hispanic drivers are searched about twice as often as white drivers (e.g.\ 4.3\% and 4.1\% vs.\ 1.9\% for state patrols). As with stop rates, this alone does not prove bias: if groups carried contraband at different rates, a race-neutral officer would search them at different rates.
+
+\subsection{Outcome test (Becker)}
+Look instead at the \textbf{hit rate}: the share of searches that find contraband. If officers search anyone whose probability of carrying contraband exceeds a common bar, the marginal searched driver should have the same hit probability in every group. If searches of Hispanic drivers succeed \emph{less} often than searches of white drivers, officers are searching Hispanic drivers on weaker evidence. The paper finds hit rates of 32.0\% for white, 29.4\% for Black and 24.3\% for Hispanic drivers in state patrol searches.
+
+\subsection{The infra-marginality problem}
+The outcome test compares \emph{average} hit rates, but the theory is about the \emph{marginal} searched driver. The paper's example: white drivers are either 5\% or 75\% likely to carry contraband; Black drivers are either 5\% or 50\% likely. An officer who searches everyone above 10\% applies the same bar to both groups, yet the hit rate is 75\% for white and 50\% for Black drivers. The outcome test would wrongly flag bias. It can also fail to detect real bias. The problem is that hit rates depend on the whole risk distribution above the threshold, not just on the threshold.
+
+\subsection{Threshold test (conceptual)}
+The threshold test (Simoiu, Corbett-Davies and Goel, 2017; Pierson et al., 2018) models the decision directly:
+\begin{enumerate}
+  \item In each stop, the officer forms a probability $p$ that the driver carries contraband. Across drivers of race $r$ in location $d$, $p$ follows a distribution with two parameters: the share who carry contraband ($\phi_{rd}$) and how easy they are to tell apart ($\delta_{rd}$).
+  \item The officer searches if $p > t_{rd}$, a race- and location-specific \textbf{threshold}.
+  \item If searched, contraband is found with probability $p$.
+\end{enumerate}
+Given the observed search rates and hit rates for every race and location, the model infers the thresholds $t_{rd}$ with Bayesian estimation (Stan), pooling information across locations through hierarchical priors. A lower threshold for one group means officers search that group on less evidence. The paper finds city thresholds of 10.0\% for white drivers vs.\ 5.0\% for Black and 4.6\% for Hispanic drivers.
+
+Points to make in the talk:
+\begin{itemize}
+  \item The thresholds are identified only through the parametric model and priors; the data alone do not pin them down. The authors check robustness by scaling the prior standard deviations by 0.5 and 1.5.
+  \item The test measures taste-based discrimination (a different bar), not statistical discrimination (using race to predict contraband), though both are illegal for police.
+  \item Bayesian estimation is outside our course, so we present the logic and their results rather than re-estimating it.
+\end{itemize}
+
+\section{Difference-in-differences (marijuana legalization)}
+
+\subsection{The question}
+Colorado and Washington legalized recreational marijuana in December 2012. Possession of small amounts stopped being a reason to search. Did legalization reduce searches, and did it change racial gaps?
+
+\subsection{The 2$\times$2 logic}
+Let $Y$ be the search rate, ``treated'' = CO and WA, ``control'' = 12 states that did not legalize, ``post'' = after December 2012. Write $Y(1)$ and $Y(0)$ for outcomes with and without legalization. The target is the average treatment effect on the treated:
+\[
+\text{ATT} = \E[Y(1) - Y(0) \mid \text{treated}, \text{post}].
+\]
+We observe $\E[Y(1)\mid \text{treated, post}]$ but never $\E[Y(0)\mid \text{treated, post}]$: what search rates in CO and WA would have been without legalization. DiD builds this counterfactual from the controls:
+\[
+\widehat{\text{ATT}} = \big(\bar Y_{T,\text{post}} - \bar Y_{T,\text{pre}}\big) - \big(\bar Y_{C,\text{post}} - \bar Y_{C,\text{pre}}\big).
+\]
+The first difference removes fixed differences between states. The second removes common shocks over time. What remains is the extra change in the treated states.
+
+\keybox{\textbf{Parallel trends.} In the absence of legalization, search rates in CO and WA would have changed by the same amount as in the control states:
+$\E[Y(0)_{\text{post}} - Y(0)_{\text{pre}} \mid T] = \E[Y(0)_{\text{post}} - Y(0)_{\text{pre}} \mid C]$.
+This cannot be tested directly, but pre-period trends that look parallel make it more plausible.}
+
+\subsection{Regression form}
+The same estimate comes from
+\[
+Y_{st} = \beta_0 + \beta_1 \text{Treat}_s + \beta_2 \text{Post}_t + \tau\,(\text{Treat}_s \times \text{Post}_t) + \varepsilon_{st},
+\]
+with $\tau$ equal to the DiD estimate. Replacing $\text{Treat}_s$ with state fixed effects and $\text{Post}_t$ with time fixed effects gives the two-way fixed effects (TWFE) model $Y_{st} = \alpha_s + \lambda_t + \tau D_{st} + \varepsilon_{st}$, where $D_{st} = \1\{\text{treated state and post}\}$. Because both treated states legalized in the same month, there is no staggered adoption, so the recent concerns about TWFE with staggered timing (Goodman-Bacon, 2021; Callaway and Sant'Anna, 2021) do not apply here.
+
+\subsection{The paper's actual specification}
+The paper fits a \textbf{logistic} DiD on whether each stop led to a search:
+\begin{equation}
+\Pr(\text{search}_i = 1) = \logit^{-1}\Big(\beta^{\text{state}}_{s_i} + \beta^{\text{time}}\, t_i + \beta^{\text{race}}_{r_i} + \alpha^{\text{race}}_{r_i}\, Z_i\Big)
+\label{eq:did}
+\end{equation}
+\begin{itemize}
+  \item $\beta^{\text{state}}_s$: state fixed effects (the ``Treat'' difference, made state-specific).
+  \item $\beta^{\text{time}}\, t$: a single \emph{linear} time trend, $t$ in years since legalization. This replaces the ``Post'' dummy or time fixed effects.
+  \item $\beta^{\text{race}}_r$: race fixed effects.
+  \item $Z_i = 1$ for stops in CO or WA after legalization: the treatment indicator $D_{st}$.
+  \item $\alpha^{\text{race}}_r$: \textbf{race-specific treatment effects}, the coefficients of interest. All three are large and negative in Table 1.
+\end{itemize}
+The sample is statewide stops from 2011 to 2015, and only discretionary searches count (consent and probable-cause searches; searches incident to arrest, inventory searches and similar are excluded because they are required by procedure).
+
+\subsection{Reading the coefficients}
+Each $\alpha_r$ is a log odds ratio: the change in the log odds of a search for race $r$ in the treated states after legalization, relative to the counterfactual from the controls. $e^{\alpha_r}$ is the multiplicative change in the odds; for small search rates (a few percent) the odds are close to the probability, so $e^{\alpha_r} - 1$ is approximately the percentage change in the search rate.
+
+\subsection{Subtleties worth discussing}
+\begin{itemize}
+  \item \textbf{Parallel trends on which scale?} In a logit model, the assumption is parallel trends in the \emph{log odds} of a search, not in the search rate itself. The two can disagree when baseline rates differ a lot, as they do across states. A linear probability model version is a useful robustness check.
+  \item \textbf{One common linear trend.} All 14 states share a single slope over time. If CO and WA were already on steeper downward trends than the controls, $\alpha$ would absorb that and overstate the effect. An \textbf{event study} shows this directly:
+  \[
+  Y_{st} = \alpha_s + \lambda_t + \sum_{k \neq -1} \tau_k\, \1\{\text{Treat}_s\}\1\{t - t^* = k\} + \varepsilon_{st},
+  \]
+  where $t^*$ is December 2012 and $k$ indexes quarters relative to legalization. Pre-period $\tau_k$ near zero support parallel trends; post-period $\tau_k$ trace the effect over time.
+  \item \textbf{Only two treated states.} The model treats every stop as an independent observation, which gives very small standard errors. But legalization varies at the state level, and there are only 2 treated states and 14 states in total. Cluster-robust standard errors are unreliable with so few clusters, and especially with so few treated clusters (Conley and Taber, 2011; MacKinnon and Webb, 2017). Better options:
+  \begin{itemize}
+    \item \textbf{Wild cluster bootstrap} by state (links to the bootstrapping lecture).
+    \item \textbf{Randomization (placebo) inference}: pretend each pair of control states legalized in December 2012, re-estimate, and see where the real estimate falls in that distribution.
+  \end{itemize}
+  \item \textbf{What else changed in December 2012?} Any CO- or WA-specific shock at the same time (new search policies, recording changes) would be attributed to legalization. Colorado also passed a THC driving limit in May 2013.
+  \item \textbf{Composition of stops.} If legalization changed \emph{who gets stopped}, search rates among stopped drivers could change even with unchanged search behaviour.
+  \item \textbf{Synthetic control} (links to the synthetic controls lecture): build a weighted combination of control states that matches Colorado's pre-2013 search rates, then compare after legalization.
+\end{itemize}
+
+\subsection{What the DiD does and does not show}
+Legalization lowered search rates for white, Black and Hispanic drivers, which narrows the \emph{absolute} gap between groups. The \emph{relative} gap persisted, and the threshold test still finds lower search thresholds for Black and Hispanic drivers after legalization. So the policy reduced searches overall but did not remove the evidence of bias.
+
+\section{How the authors implemented each method}
+\label{sec:code}
+From the public code (\url{https://github.com/stanford-policylab/opp}), which our replication follows:
+\begin{itemize}
+  \item \textbf{Data aggregation.} Both the veil-of-darkness and DiD models are fitted on \emph{counts} rather than individual stops: \texttt{glm(cbind(successes, failures) $\sim$ \ldots, family = binomial)}. For a logit with categorical covariates this gives exactly the same estimates as the stop-level model, and it is much faster. It is a useful point to make when explaining how 95 million stops fit in memory.
+  \item \textbf{Veil of darkness} (\texttt{veil\_of\_darkness.R}, \texttt{eligibility.R}). Stops within 30 days of DST changes; inter-twilight window; sunset-to-dusk removed; Black and white drivers only; per agency, the 20 locations with the most stops; location-years with fewer than 100 stops per race dropped. Clock time is rounded to 5 minutes. Controls: \texttt{ns(rounded\_minute, df = 6) + geography + season*year}. The paper's headline numbers use the 6-df spline with separate darkness effects by agency type; the code also refits with spline degrees 1 to 6 as robustness.
+  \item \textbf{DiD} (\texttt{marijuana\_legalization\_analysis.R}). Statewide data 2011--2015, states with data before and after 2012, months with less than 50\% search coverage removed. Data aggregated to state $\times$ date $\times$ race. Formula: \texttt{cbind(n\_discretionary\_searches, n\_stops - n\_discretionary\_searches) $\sim$ state + years\_since\_legalization + subject\_race + is\_treatment:subject\_race}. Legalization dates: 9 Dec 2012 (WA and controls), 10 Dec 2012 (CO).
+  \item \textbf{Controls.} AZ, CA, FL, MA, MT, NC, OH, RI, SC, TX, VT, WI (Figure 5 of the paper).
+\end{itemize}
+
+\section{Numbers to know for Q\&A}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Item & Value \\
+\midrule
+Stops in main dataset & about 95 million (21 state patrols, 35 cities), 2011--2018 \\
+Annual stop rate, state patrols & Black 0.10, white 0.07, Hispanic 0.05 per capita \\
+Veil of darkness & $\alpha_s = -0.033$, $\alpha_c = -0.039$ (log odds) \\
+Search rates, state patrols & Black 4.3\%, Hispanic 4.1\%, white 1.9\% \\
+Hit rates, state patrols & white 32.0\%, Black 29.4\%, Hispanic 24.3\% \\
+Search thresholds, cities & white 10.0\%, Black 5.0\%, Hispanic 4.6\% \\
+Search thresholds, states & white 20.9\%, Black 16.0\%, Hispanic 13.9\% \\
+Legalization & CO and WA, December 2012; 12 control states \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{References}
+\begin{itemize}[leftmargin=*]
+\item Callaway, B.\ and P.\ Sant'Anna (2021). Difference-in-differences with multiple time periods. \emph{Journal of Econometrics}.
+\item Conley, T.\ and C.\ Taber (2011). Inference with ``difference in differences'' with a small number of policy changes. \emph{Review of Economics and Statistics}.
+\item Goodman-Bacon, A.\ (2021). Difference-in-differences with variation in treatment timing. \emph{Journal of Econometrics}.
+\item Grogger, J.\ and G.\ Ridgeway (2006). Testing for racial profiling in traffic stops from behind a veil of darkness. \emph{JASA}.
+\item MacKinnon, J.\ and M.\ Webb (2017). Wild bootstrap inference for wildly different cluster sizes. \emph{Journal of Applied Econometrics}.
+\item Pierson, E.\ et al.\ (2020). A large-scale analysis of racial disparities in police stops across the United States. \emph{Nature Human Behaviour} 4, 736--745.
+\item Simoiu, C., S.\ Corbett-Davies and S.\ Goel (2017). The problem of infra-marginality in outcome tests for discrimination. \emph{Annals of Applied Statistics}.
+\item Smith, A.\ (2016). Spring forward at your own risk: daylight saving time and fatal vehicle crashes. \emph{AEJ: Applied}.
+\end{itemize}
+
+\end{document}

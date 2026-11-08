@@ -1,0 +1,4 @@
+term,actual,n_placebos,share_placebos_as_negative,placebo_min,placebo_median
+subject_raceblack:is_treatmentTRUE,-0.9824277196370587,66,0,-0.39524535774091296,0.09375589291164266
+subject_racehispanic:is_treatmentTRUE,-0.7861654615667253,66,0,-0.48501042337184275,0.08868016231810776
+subject_racewhite:is_treatmentTRUE,-0.9989811617310695,66,0,-0.2822950291345376,0.07600123513243491

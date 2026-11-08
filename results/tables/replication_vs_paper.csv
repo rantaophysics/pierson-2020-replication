@@ -1,0 +1,8 @@
+analysis,quantity,paper,ours,note
+DiD (Table 1),Legalization effect: white drivers (log odds),-0.96 (0.02),-1.00 (0.02),same specification and 14 states
+DiD (Table 1),Legalization effect: Black drivers (log odds),-0.98 (0.06),-0.98 (0.06),
+DiD (Table 1),Legalization effect: Hispanic drivers (log odds),-0.69 (0.03),-0.79 (0.03),
+DiD (Table 1),Time trend (per year),-0.04 (0.00),-0.02 (0.00),
+DiD (Table 1),Black driver,0.78 (0.00),0.75 (0.00),
+DiD (Table 1),Hispanic driver,0.59 (0.00),0.65 (0.00),
+Veil of darkness,Darkness coefficient: state patrols (log odds),-0.033 [-0.039 to -0.027],-0.053 [-0.081 to -0.026],paper pools 21 state patrols; ours pools TX FL OH WA (states with stop times)

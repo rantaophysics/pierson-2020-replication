@@ -1,0 +1,13 @@
+spec,term,estimate,std_error,p_value
+"Paper: logit, linear trend, iid SE",subject_racewhite:is_treatmentTRUE,-0.9989811617310695,0.02234227649617877,0
+"Paper: logit, linear trend, iid SE",subject_raceblack:is_treatmentTRUE,-0.9824277196370587,0.0567373224110779,3.6020082871393594e-67
+"Paper: logit, linear trend, iid SE",subject_racehispanic:is_treatmentTRUE,-0.7861654615667253,0.033984753644941926,2.1617253738176487e-118
+"Logit, linear trend, SE clustered by state",subject_racewhite:is_treatmentTRUE,-0.9989811617310695,0.06887730155455805,1.1465955907364064e-47
+"Logit, linear trend, SE clustered by state",subject_raceblack:is_treatmentTRUE,-0.9824277196370587,0.30422675080193967,0.0012411037303925434
+"Logit, linear trend, SE clustered by state",subject_racehispanic:is_treatmentTRUE,-0.7861654615667253,0.21022548476553551,1.8429155724389813e-4
+"Logit, quarter FE, SE clustered by state",subject_racewhite:is_treatmentTRUE,-1.0054659594597237,0.07573385586939639,3.1767721536682622e-40
+"Logit, quarter FE, SE clustered by state",subject_raceblack:is_treatmentTRUE,-0.9894847608240128,0.3076622733747016,0.001299277012587759
+"Logit, quarter FE, SE clustered by state",subject_racehispanic:is_treatmentTRUE,-0.7924805011732292,0.2154571207329299,2.3494507212882588e-4
+"Linear probability model, quarter FE, SE clustered by state",subject_racewhite:is_treatmentTRUE,-7.872524422357112e-4,0.0011820908407062108,0.5054240118167332
+"Linear probability model, quarter FE, SE clustered by state",subject_raceblack:is_treatmentTRUE,-0.009806461185360908,0.004179468973339624,0.018961342110179694
+"Linear probability model, quarter FE, SE clustered by state",subject_racehispanic:is_treatmentTRUE,-0.005372225073155423,0.0028351903385372534,0.058117803834579734
